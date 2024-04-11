@@ -23,14 +23,28 @@ export const UserInActivityProvider = ({ childern }: any) => {
 
     const handleAppStateChange = (nextAppState: any) => {
         if(nextAppState === "inactive") {
-            router.push('(modals)/white');
+            router.push('/(modals)/white');
         } else {
             if(router.canGoBack()) {
                 router.back();
             }
+        } 
+
+        if(nextAppState === "background") {
+            recordStartTime();
+        } else if(nextAppState === "active" && appState.current.match(/background/)) {
+            const elapsed = Date.now() - (storage.getNumber('startTime') || 0);
+
+            if(elapsed >= LOCK_TIME) {
+                router.push("/(modals)/lock");
+            }
         }
 
         appState.current = nextAppState;
+    }
+
+    const recordStartTime = () => {
+        storage.set('startTime', Date.now());
     }
     return childern
 }
