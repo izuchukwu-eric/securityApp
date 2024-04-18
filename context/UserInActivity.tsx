@@ -1,11 +1,13 @@
 import { useRouter } from "expo-router";
 import { useEffect, useRef } from "react";
 import { AppState } from "react-native";
-import { MMKV } from "react-native-mmkv";
+// import { MMKV } from "react-native-mmkv";
+import * as SecureStore from 'expo-secure-store';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const storage = new MMKV({
-    id: "UserInActivity",
-});
+// const storage = new MMKV({
+//     id: "UserInActivity",
+// });
 
 const LOCK_TIME = 3000;
 
@@ -21,9 +23,10 @@ export const UserInActivityProvider = ({ childern }: any) => {
         }
     }, []);
 
-    const handleAppStateChange = (nextAppState: any) => {
+    const handleAppStateChange = async (nextAppState: any) => {
         if(nextAppState === "inactive") {
-            router.push('/(modals)/white');
+            router.push("/(modals)/white");
+            console.log(nextAppState)
         } else {
             if(router.canGoBack()) {
                 router.back();
@@ -31,9 +34,11 @@ export const UserInActivityProvider = ({ childern }: any) => {
         } 
 
         if(nextAppState === "background") {
+            console.log(nextAppState)
             recordStartTime();
         } else if(nextAppState === "active" && appState.current.match(/background/)) {
-            const elapsed = Date.now() - (storage.getNumber('startTime') || 0);
+            const startTime = await SecureStore.getItemAsync("startTime");
+            const elapsed = Date.now() - (JSON.parse(startTime as string) || 0);
 
             if(elapsed >= LOCK_TIME) {
                 router.push("/(modals)/lock");
@@ -43,8 +48,9 @@ export const UserInActivityProvider = ({ childern }: any) => {
         appState.current = nextAppState;
     }
 
-    const recordStartTime = () => {
-        storage.set('startTime', Date.now());
+    const recordStartTime = async () => {
+        AsyncStorage.setItem('startTime', JSON.stringify(Date.now()));
+        await SecureStore.setItemAsync("startTime", JSON.stringify(Date.now()));
     }
     return childern
 }
